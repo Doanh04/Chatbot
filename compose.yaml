@@ -6,6 +6,12 @@ services:
     environment:
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3-vi:latest}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL_35_FLASH_LITE: ${GEMINI_MODEL_35_FLASH_LITE:-gemini-3.5-flash-lite}
+      GEMINI_MODEL_31_FLASH_LITE: ${GEMINI_MODEL_31_FLASH_LITE:-gemini-3.1-flash-lite}
+      GEMINI_MODEL_GEMMA_4_26B: ${GEMINI_MODEL_GEMMA_4_26B:-gemma-4-26b-a4b-it}
+      GEMINI_MODEL_GEMMA_4_31B: ${GEMINI_MODEL_GEMMA_4_31B:-gemma-4-31b-it}
+      GEMINI_DEFAULT_MODEL: ${GEMINI_DEFAULT_MODEL:-gemini-3.5-flash-lite}
       R2_BUCKET: ${R2_BUCKET:?Set R2_BUCKET in .env}
       R2_ENDPOINT: ${R2_ENDPOINT:?Set R2_ENDPOINT in .env}
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?Set R2_ACCESS_KEY_ID in .env}
