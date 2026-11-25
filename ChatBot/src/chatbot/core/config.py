@@ -3,6 +3,8 @@ from pathlib import Path
 
 import boto3
 from botocore.client import BaseClient
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.runnables import RunnableWithFallbacks
 from langchain_ollama import ChatOllama
 from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -29,6 +31,14 @@ class Settings(BaseSettings):
 # Config for the Ollama LLM client.
     ollama_model: str = "qwen3-vi:latest"
     ollama_base_url: str = "http://localhost:11434"
+
+# Config for models served through the Gemini Developer API.
+    gemini_api_key: SecretStr | None = None
+    gemini_model_35_flash_lite: str = "gemini-3.5-flash-lite"
+    gemini_model_31_flash_lite: str = "gemini-3.1-flash-lite"
+    gemini_model_gemma_4_26b: str = "gemma-4-26b-a4b-it"
+    gemini_model_gemma_4_31b: str = "gemma-4-31b-it"
+    gemini_default_model: str = "gemini-3.5-flash-lite"
 
 # Config for the S3-compatible bucket (Cloudflare R2) for storing files.
     r2_bucket: str
@@ -76,3 +86,42 @@ def get_llm(reasoning: bool = False) -> ChatOllama:
         reasoning=reasoning,
         client_kwargs={"timeout": 180},
     )
+
+
+@lru_cache
+def get_gemini_llm(model: str | None = None) -> ChatGoogleGenerativeAI:
+    """Return a Gemini API client for one of the four configured models."""
+    settings = get_settings()
+    if settings.gemini_api_key is None or not settings.gemini_api_key.get_secret_value():
+        raise ValueError("GEMINI_API_KEY is required to use Gemini models")
+
+    configured_models = {
+        settings.gemini_model_35_flash_lite,
+        settings.gemini_model_31_flash_lite,
+        settings.gemini_model_gemma_4_26b,
+        settings.gemini_model_gemma_4_31b,
+    }
+    selected_model = model or settings.gemini_default_model
+    if selected_model not in configured_models:
+        raise ValueError(f"Gemini model is not configured: {selected_model}")
+
+    return ChatGoogleGenerativeAI(
+        model=selected_model,
+        api_key=settings.gemini_api_key.get_secret_value(),
+    )
+
+
+@lru_cache
+def get_gemini_llm_with_fallbacks(model: str | None = None) -> RunnableWithFallbacks:
+    """Try Gemini models in order, then use the local Ollama model on errors."""
+    settings = get_settings()
+    primary = get_gemini_llm(model)
+    models = dict.fromkeys((
+        settings.gemini_model_35_flash_lite,
+        settings.gemini_model_31_flash_lite,
+        settings.gemini_model_gemma_4_26b,
+        settings.gemini_model_gemma_4_31b,
+    ))
+    fallbacks = [get_gemini_llm(name) for name in models if name != primary.model]
+    fallbacks.append(get_llm())
+    return primary.with_fallbacks(fallbacks)
