@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: backend-chatbot
+  config:
+    import: "optional:file:../.env[.properties]"
+  datasource:
+    url: "jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:chatbot}"
+    username: "${DB_USER:chatbot}"
+    password: "${DB_PASSWORD:${POSTGRES_PASSWORD:}}"
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+auth:
+  jwt:
+    secret-base64: "${AUTH_JWT_SECRET_BASE64}"
+    issuer: backend-chatbot
+    ttl: "${AUTH_JWT_TTL:PT1H}"
