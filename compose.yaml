@@ -12,10 +12,10 @@ services:
       GEMINI_MODEL_GEMMA_4_26B: ${GEMINI_MODEL_GEMMA_4_26B:-gemma-4-26b-a4b-it}
       GEMINI_MODEL_GEMMA_4_31B: ${GEMINI_MODEL_GEMMA_4_31B:-gemma-4-31b-it}
       GEMINI_DEFAULT_MODEL: ${GEMINI_DEFAULT_MODEL:-gemini-3.5-flash-lite}
-      R2_BUCKET: ${R2_BUCKET:?Set R2_BUCKET in .env}
-      R2_ENDPOINT: ${R2_ENDPOINT:?Set R2_ENDPOINT in .env}
-      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?Set R2_ACCESS_KEY_ID in .env}
-      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:?Set R2_SECRET_ACCESS_KEY in .env}
+      R2_BUCKET: ${R2_BUCKET:-}
+      R2_ENDPOINT: ${R2_ENDPOINT:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
       DB_HOST: postgres-db
       DB_PORT: "5432"
       DB_NAME: chatbot
@@ -23,6 +23,8 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     ports:
       - "127.0.0.1:8000:8000"
+    volumes:
+      - storage_data:/app/storage
     depends_on:
       postgres-db:
         condition: service_healthy
@@ -60,3 +62,4 @@ services:
 
 volumes:
   postgres_data:
+  storage_data:
