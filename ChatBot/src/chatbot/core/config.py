@@ -3,6 +3,7 @@ from pathlib import Path
 
 import boto3
 from botocore.client import BaseClient
+from botocore.config import Config
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.runnables import RunnableWithFallbacks
 from langchain_ollama import ChatOllama
@@ -41,10 +42,11 @@ class Settings(BaseSettings):
     gemini_default_model: str = "gemini-3.5-flash-lite"
 
 # Config for the S3-compatible bucket (Cloudflare R2) for storing files.
-    r2_bucket: str
-    r2_endpoint: str
-    r2_access_key_id: str
-    r2_secret_access_key: SecretStr
+    r2_bucket: str | None = None
+    r2_endpoint: str | None = None
+    r2_access_key_id: str | None = None
+    r2_secret_access_key: SecretStr | None = None
+    storage_dir: Path = Path(__file__).resolve().parents[3] / "storage"
 
     @property
     def database_url(self) -> URL:
@@ -67,12 +69,18 @@ def get_settings() -> Settings:
 def get_r2_client() -> BaseClient:
     """Return an S3-compatible client configured for Cloudflare R2."""
     settings = get_settings()
+    if not all((settings.r2_bucket, settings.r2_endpoint, settings.r2_access_key_id)) or (
+        settings.r2_secret_access_key is None
+        or not settings.r2_secret_access_key.get_secret_value()
+    ):
+        raise ValueError("R2_BUCKET, R2_ENDPOINT and R2 API keys are required to use R2")
     return boto3.client(
         service_name="s3",
         endpoint_url=settings.r2_endpoint,
         aws_access_key_id=settings.r2_access_key_id,
         aws_secret_access_key=settings.r2_secret_access_key.get_secret_value(),
         region_name="auto",
+        config=Config(signature_version="s3v4"),
     )
 
 
